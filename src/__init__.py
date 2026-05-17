@@ -1,0 +1,1 @@
+"""FraudGuard AI application utilities."""

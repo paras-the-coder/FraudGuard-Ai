@@ -6,11 +6,14 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "imbalanced-learn==0.14.1",
+    "joblib==1.5.2",
     "matplotlib==3.10.1",
     "numpy==2.4.1",
     "pandas==2.3.3",
+    "plotly>=6.7.0",
     "scikit-learn==1.6.1",
     "scipy==1.16.2",
     "seaborn==0.13.2",
+    "streamlit>=1.57.0",
     "xgboost==3.1.0",
 ]
