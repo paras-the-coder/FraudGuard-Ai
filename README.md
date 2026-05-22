@@ -229,6 +229,36 @@ FraudGuard-AI/
 
 ---
 
+# System Flow
+ 
+```text
+Raw Insurance Claim
+        │
+        ▼
+Feature Engineering
+(claim_ratio, vehicle_age, days_between_policy_incident, csl splits)
+        │
+        ▼
+Logistic Regression Pipeline
+(StandardScaler + OneHotEncoder + SMOTE + LR)
+        │
+        ▼
+Base Fraud Probability Score
+        │
+        ▼
+Business Rule Adjustment
+(injury-to-damage ratio, missing police report, short tenure, claim dominance)
+        │
+        ▼
+Final Risk Score + Signals
+        │
+        ├── Low  (<35%)  → Auto-approve
+        ├── Medium (35–65%) → Manual review
+        └── High  (>65%)  → Escalate to SIU
+```
+ 
+---
+
 # Limitations
 
 FraudGuard AI is a fraud-screening support tool, not a final fraud decision system.
@@ -265,12 +295,11 @@ Possible future enhancements:
 
 # What I Learned
 
-* Real-world fraud analytics workflows
-* ML classification pipelines
-* Feature engineering
-* Explainable AI concepts
-* Business-focused AI system design
-* Fraud risk interpretation
+* Built an end-to-end ML pipeline with SMOTE inside an imbalanced-learn `Pipeline` to prevent data leakage during cross-validation
+* Used `make_scorer(fbeta_score, beta=2)` as the `RandomizedSearchCV` scoring function so hyperparameter search optimized directly for fraud recall, not accuracy
+* Designed business-rule post-processing on top of model probability scores to capture fraud signals that statistical features alone cannot express
+* Implemented coefficient-based feature contribution explanations for logistic regression as a lightweight, production-compatible alternative to SHAP
+* Learned why precision-recall tradeoffs matter more than accuracy in imbalanced, high-cost classification problems like insurance fraud
 
 ---
 
