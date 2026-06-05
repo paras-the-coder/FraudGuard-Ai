@@ -102,6 +102,13 @@ MODEL_COMPARISON = {
         "F2 Score": 0.7540,
         "ROC-AUC": 0.8604,
     },
+    "XGBoost (Balanced)": {
+        "Accuracy": 0.8450,
+        "Recall": 0.8571,
+        "F1 Score": 0.7304,
+        "F2 Score": 0.8015,
+        "ROC-AUC": 0.8430,
+    },
 }
 
 LOW_RISK_THRESHOLD = 0.35

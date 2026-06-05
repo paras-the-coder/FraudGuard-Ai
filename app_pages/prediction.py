@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+import shap
+import numpy as np
+import plotly.graph_objects as go
 
-from src.charts import contribution_bar, metric_gauge
+from src.charts import metric_gauge
 from src.config import MODEL_INPUT_COLUMNS
 from src.data import get_example_claim, get_filter_options, model_input_frame
 from src.explain import top_feature_contributions
@@ -54,30 +57,7 @@ def _hidden_pipeline_defaults(values: pd.Series) -> dict:
     }
 
 
-def _business_explanation(contributors: pd.DataFrame, prediction: str) -> str:
-    direction = "Raises fraud risk" if prediction == "Fraud" else "Lowers fraud risk"
-    selected = contributors[contributors["Direction"] == direction].head(4)
-    if selected.empty:
-        selected = contributors.head(4)
 
-    heading = "This claim was flagged because:" if prediction == "Fraud" else "This claim appears lower risk because:"
-    bullets = "".join(f"<li>{row.Feature}</li>" for row in selected.itertuples(index=False))
-    return f"""
-    <div class="reason-card">
-        <div class="reason-title">{heading}</div>
-        <ul>{bullets}</ul>
-    </div>
-    """
-
-
-def _action_card(probability: float) -> str:
-    action, level = recommended_action(probability)
-    return f"""
-    <div class="action-card action-{level}">
-        <span>Recommended Action</span>
-        <strong>{action}</strong>
-    </div>
-    """
 
 
 def _data_flags_card(flags: list[tuple[str, str]]) -> str:
@@ -98,6 +78,36 @@ def _rule_signals_card(signals: list[str]) -> str:
         <ul>{items}</ul>
     </div>
     """
+
+
+@st.cache_resource(show_spinner=False)
+def get_shap_explainer(_model):
+    """
+    Cached function to initialize and return the SHAP LinearExplainer and preprocessor.
+    Loads and processes the background dataset to calibrate Shapley values.
+    """
+    preprocess_step = _model.named_steps["preprocess"]
+    lr_model = _model.named_steps["model"]
+    
+    # Load background data
+    from src.data import load_prepared_data
+    bg_df = load_prepared_data()
+    if "fraud_reported" in bg_df.columns:
+        bg_df = bg_df.drop(columns=["fraud_reported"])
+    bg_df = bg_df[MODEL_INPUT_COLUMNS]
+    
+    # Transform background data using model pipeline's preprocess step
+    bg_trans = preprocess_step.transform(bg_df)
+    
+    # Format and clean the feature names for plotting
+    feature_names = [
+        name.replace("num__", "").replace("cat__", "").replace("_", " ").title()
+        for name in preprocess_step.get_feature_names_out()
+    ]
+    
+    # Use LinearExplainer
+    explainer = shap.LinearExplainer(lr_model, bg_trans, feature_names=feature_names)
+    return explainer, preprocess_step
 
 
 def manual_form() -> pd.DataFrame | None:
@@ -260,6 +270,7 @@ def show_prediction(frame: pd.DataFrame) -> None:
     contributors = top_feature_contributions(model, prepared.iloc[[0]])
     action, _ = recommended_action(probability)
     flags = data_integrity_flags(report_claim)
+    report_contributors = contributors
 
     st.markdown("### Prediction Results")
     c1, c2 = st.columns([1.05, 1])
@@ -284,21 +295,105 @@ def show_prediction(frame: pd.DataFrame) -> None:
             unsafe_allow_html=True,
         )
 
-    st.markdown(_action_card(probability), unsafe_allow_html=True)
     st.markdown(_data_flags_card(flags), unsafe_allow_html=True)
     if rule_signals:
         st.markdown(_rule_signals_card(rule_signals), unsafe_allow_html=True)
-    st.markdown(_business_explanation(contributors, prediction), unsafe_allow_html=True)
 
-    st.markdown("#### Visual Risk Drivers")
-    st.caption("Coefficient-based contribution chart from the Logistic Regression model. Red bars push the fraud score up; green bars push it down.")
-    st.plotly_chart(contribution_bar(contributors), use_container_width=True)
+    # ── Why this prediction? (SHAP Explainability Section) ─────────────────
+    st.markdown("### Why this prediction?")
+    st.caption("Detailed explainability section showing how individual features of this claim contributed to the model's decision.")
 
-    st.markdown("#### Top Contributing Features")
-    st.dataframe(contributors, use_container_width=True, hide_index=True)
+    try:
+        # Get cached SHAP explainer
+        explainer, preprocess_step = get_shap_explainer(model)
+        
+        # Transform the single input claim using model preprocessor
+        single_trans = preprocess_step.transform(prepared)
+        
+        # Clean feature names for presentation
+        clean_feature_names = [
+            name.replace("num__", "").replace("cat__", "").replace("_", " ").title()
+            for name in preprocess_step.get_feature_names_out()
+        ]
+        
+        # Compute SHAP values for the current input
+        shap_values = explainer(single_trans)
+        vals = shap_values.values[0]
+        
+        # Build a pandas DataFrame to find the top contributing features
+        contrib_df = pd.DataFrame({
+            'Feature': clean_feature_names,
+            'SHAP Value': vals,
+            'Absolute SHAP Value': np.abs(vals)
+        })
+        
+        # Extract the top 8 contributions by absolute magnitude
+        top_contrib_df = contrib_df.sort_values(by='Absolute SHAP Value', ascending=False).head(8)
+        
+        # Reverse the order so the largest value is at the top of the horizontal Plotly bar chart
+        top_contrib_df = top_contrib_df.iloc[::-1]
+        
+        # Green bars for risk reducers (SHAP < 0), red bars for risk enhancers (SHAP >= 0)
+        bar_colors = ['#e74c3c' if x >= 0 else '#2ecc71' for x in top_contrib_df['SHAP Value']]
+        
+        # Render horizontal bar chart with Plotly
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=top_contrib_df['Feature'],
+            x=top_contrib_df['SHAP Value'],
+            orientation='h',
+            marker_color=bar_colors,
+            hovertemplate="Feature: %{y}<br>SHAP Value: %{x:.4f}<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            xaxis_title="SHAP Value (Risk Influence)",
+            yaxis_title="Feature Name",
+            margin=dict(l=150, r=20, t=10, b=10),
+            height=350,
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(0,0,0,0.1)')
+        fig.update_yaxes(showgrid=False)
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Add plain-English summary sentence at the bottom
+        pos_contribs = contrib_df[contrib_df['SHAP Value'] > 0]
+        neg_contribs = contrib_df[contrib_df['SHAP Value'] < 0]
+        
+        parts = []
+        if not neg_contribs.empty:
+            top_neg = neg_contribs.sort_values(by='SHAP Value', ascending=True).iloc[0]
+            parts.append(f"The top factor reducing fraud risk for this claim is **{top_neg['Feature']}**")
+        if not pos_contribs.empty:
+            top_pos = pos_contribs.sort_values(by='SHAP Value', ascending=False).iloc[0]
+            parts.append(f"the top factor raising concern is **{top_pos['Feature']}**")
+            
+        if len(parts) == 2:
+            st.markdown(f"{parts[0]}, and {parts[1]}.")
+        elif len(parts) == 1:
+            st.markdown(f"{parts[0]}.")
 
-    report = build_html_report(report_claim, probability, prediction, risk, contributors, rule_signals)
-    pdf_report = build_pdf_report(report_claim, probability, prediction, risk, contributors, rule_signals)
+        # Format report_contributors using SHAP values
+        shap_contrib = pd.DataFrame({
+            'Feature': clean_feature_names,
+            'Contribution': vals,
+            'Impact': np.abs(vals),
+            'Direction': ['Raises fraud risk' if x >= 0 else 'Lowers fraud risk' for x in vals]
+        })
+        shap_contrib = shap_contrib.sort_values(by='Impact', ascending=False).head(8)
+        shap_contrib['Contribution'] = shap_contrib['Contribution'].round(3)
+        shap_contrib['Impact'] = shap_contrib['Impact'].round(3)
+        report_contributors = shap_contrib[["Feature", "Direction", "Contribution", "Impact"]]
+            
+    except Exception as exc:
+        st.error(f"Could not calculate SHAP values: {exc}")
+
+    report = build_html_report(report_claim, probability, prediction, risk, report_contributors, rule_signals)
+    pdf_report = build_pdf_report(report_claim, probability, prediction, risk, report_contributors, rule_signals)
     d1, d2 = st.columns(2)
     with d1:
         st.download_button(

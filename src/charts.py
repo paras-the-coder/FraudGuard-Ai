@@ -89,7 +89,7 @@ def model_comparison_bar() -> go.Figure:
         color="Model",
         barmode="group",
         template=TEMPLATE,
-        color_discrete_sequence=[ACCENT, BLUE, RED],
+        color_discrete_sequence=[ACCENT, BLUE, RED, YELLOW],
         text=df["Score"].map(lambda value: f"{value:.2f}"),
     )
     fig.update_traces(textposition="outside", cliponaxis=False)
