@@ -19,3 +19,8 @@ dependencies = [
     "streamlit==1.57.0",
     "xgboost==3.1.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

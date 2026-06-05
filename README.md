@@ -1,5 +1,12 @@
 # FraudGuard AI — Insurance Claim Fraud Detection System
 
+[![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.57-FF4B4B?style=flat-square&logo=streamlit)](https://streamlit.io)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6-F7931E?style=flat-square&logo=scikit-learn)](https://scikit-learn.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+🔗 **[Live Demo → fraudguard-ai.streamlit.app](https://fraudguard-ai.streamlit.app)**
+
 FraudGuard AI is a Machine Learning-powered insurance claim fraud detection system designed to identify suspicious automobile insurance claims and support fraud investigation workflows.
 
 The project combines:
@@ -122,10 +129,13 @@ The final model selected for this project is **Logistic Regression**.
 Although multiple models were tested, including **Random Forest** and **XGBoost**, Logistic Regression was chosen as the best production-ready model because it achieved the strongest balance for fraud detection, especially on **recall**.
 
 | Model | Accuracy | Recall | F1 Score | F2 Score | ROC-AUC |
-|---|---:|---:|---:|---:|---:|
-| Logistic Regression | 0.845 | 0.857 | 0.730 | 0.802 | 0.849 |
+| --- | --- | --- | --- | --- | --- |
+| **Logistic Regression** ✓ | 0.845 | **0.857** | **0.730** | **0.802** | 0.849 |
 | Random Forest | 0.830 | 0.755 | 0.685 | 0.726 | 0.833 |
-| XGBoost | 0.855 | 0.776 | 0.724 | 0.754 | 0.860 |
+| XGBoost (SMOTE, tuned) | 0.855 | 0.776 | 0.724 | 0.754 | 0.860 |
+| XGBoost (scale_pos_weight, tuned) | 0.845 | **0.857** | **0.730** | **0.802** | 0.841 |
+
+> XGBoost was additionally evaluated with `scale_pos_weight` class balancing and full RandomizedSearchCV tuning (50 iterations, 6 hyperparameters). The best XGBoost configuration achieved **identical recall and F2 to Logistic Regression**, confirming that the simpler model is the correct production choice — equal performance with better interpretability and faster inference.
 
 ## Why Logistic Regression Was Selected
 
@@ -149,11 +159,19 @@ The final model is not intended to automatically reject claims. Instead, it acts
 
 ## Explainability & Risk Interpretation
 
-FraudGuard AI includes explainable prediction outputs such as visual risk drivers and feature contribution analysis.
+FraudGuard AI uses **SHAP (SHapley Additive exPlanations)** via `shap.LinearExplainer` 
+to generate per-prediction, instance-level explanations.
 
-These explanations show how the trained Logistic Regression model weighted different features during prediction based on learned statistical patterns in the dataset.
+Each prediction shows which features pushed the fraud probability up or down 
+for that specific claim — not global model weights, but claim-specific reasoning.
 
-The explanations are intended to support fraud-risk interpretation and investigation workflows, but they should not be treated as direct legal or causal proof of fraud.
+SHAP analysis revealed that `incident_severity_major_damage` is the strongest 
+global fraud signal. Features like insured hobbies appearing in top SHAP values 
+are acknowledged as likely spurious correlations from the small dataset (~1000 rows) 
+rather than genuine causal fraud indicators.
+
+Explanations support fraud-risk interpretation workflows but should not be treated 
+as legal or causal proof of fraud.
 
 ---
 
@@ -201,7 +219,7 @@ This improves fraud-screening realism and operational interpretability.
 
 - **Web Application**: Streamlit, Custom CSS
 
-- **Model Explainability & Reporting**: Logistic Regression coefficient-based feature contributions, Business-rule fraud signals, HTML and PDF report generation
+- **Model Explainability & Reporting**: SHAP (LinearExplainer), per-prediction waterfall contributions, business-rule fraud signals, HTML and PDF investigation report generation
 
 ---
 
@@ -280,16 +298,13 @@ FraudGuard AI should be viewed as a fraud risk assessment and investigation supp
 
 # Future Improvements
 
-Possible future enhancements:
-
-* SHAP-based explainability
-* Ensemble learning models
-* Real-time API integration
-* Cloud deployment
-* User authentication
-* Claim history tracking
-* Production-grade monitoring
-* The UI and the report generation can be improved further
+- FastAPI backend for real-time claim scoring API
+- Ensemble learning models (stacking LR + XGBoost)
+- Real-time API integration with claims management systems
+- User authentication and role-based access
+- Claim history tracking and trend analysis
+- Production-grade monitoring and model drift detection
+- Larger, more diverse training dataset to reduce spurious correlations
 
 ---
 
