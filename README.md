@@ -141,13 +141,12 @@ Although multiple models were tested, including **Random Forest** and **XGBoost*
 
 In insurance fraud detection, **missing a fraudulent claim is more costly than sending a legitimate claim for review**. Because of this, the model was selected primarily based on **Recall** and **F2 Score**, not accuracy alone.
 
-Logistic Regression achieved the highest recall, detecting about **86% of fraudulent claims** in the test set. It also had the best F2 Score, which gives more importance to recall than precision. This makes it better suited for a pre-claim fraud screening system where the goal is to catch as many suspicious claims as possible before payout.
+While the original unbalanced XGBoost missed more fraud cases, retraining XGBoost with class weight balancing (`scale_pos_weight`) and hyperparameter tuning allowed it to match the highest recall (86%) and F2 score (0.802) of Logistic Regression.
 
-XGBoost had slightly higher accuracy and ROC-AUC, but it missed more fraud cases than Logistic Regression. Random Forest also performed well, but its recall was lower. Therefore, Logistic Regression was chosen as the final model because it is:
+However, **Logistic Regression was still selected as the final production model** because it delivers identical recall and F2 score to the tuned XGBoost while being:
 
-- Better at catching fraud cases
-- Easier to interpret
-- Faster and simpler to deploy
+- **Highly interpretable:** Easier to explain prediction logic and feature contributions to claims adjusters, investigators, and regulators.
+- **Simpler and faster:** Faster to train, run, and maintain in production with zero deployment overhead compared to complex tree ensembles.
 
 The final model is not intended to automatically reject claims. Instead, it acts as a **fraud risk screening tool** that helps prioritize claims for manual or SIU review.
 
@@ -241,6 +240,7 @@ FraudGuard-AI/
 ├── data/
 ├── assets/
 ├── notebooks/
+├── tests/           (pytest suite for data pipeline and model validation)
 ├── requirements.txt
 └── README.md
 ```
