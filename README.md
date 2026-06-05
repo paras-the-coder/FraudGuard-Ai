@@ -20,7 +20,7 @@ The project combines:
 
 # Application Preview
 
-![FraudGuard AI Home Page](assets/screenshots/home.png)
+<img width="1890" height="828" alt="image" src="https://github.com/user-attachments/assets/6c99c472-563e-446e-88e4-c8c71f6044e5" />
 
 ---
 
@@ -152,8 +152,8 @@ The final model is not intended to automatically reject claims. Instead, it acts
 
 ### Model Performance Visuals
 
-![Model Performance Comparison](<img width="1782" height="884" alt="model_comparison" src="https://github.com/user-attachments/assets/043a9082-ae66-417b-9819-c9aac0851f0d" />
-)
+<img width="1408" height="555" alt="image" src="https://github.com/user-attachments/assets/4b88c3f6-33ab-41bf-bb0c-31cb31a0a48e" />
+
 
 ---
 
@@ -205,7 +205,8 @@ This improves fraud-screening realism and operational interpretability.
 
 ### Prediction Demo
 
-![Prediction Demo Form](assets/screenshots/prediction-form.png)
+<img width="1904" height="826" alt="Screenshot 2026-05-17 132935" src="https://github.com/user-attachments/assets/d02d8d68-4224-420f-a065-b24092f7cc78" />
+
 
 ---
 
