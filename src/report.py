@@ -8,11 +8,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
+from src.config import HIGH_RISK_THRESHOLD, LOW_RISK_THRESHOLD
+
 
 def recommended_action(probability: float) -> tuple[str, str]:
-    if probability <= 0.30:
+    if probability < LOW_RISK_THRESHOLD:
         return "Auto-approve for processing.", "low"
-    if probability <= 0.70:
+    if probability < HIGH_RISK_THRESHOLD:
         return "Flag for manual review by a junior adjuster.", "medium"
     return "Escalate to Special Investigations Unit (SIU) immediately.", "high"
 
@@ -102,7 +104,7 @@ def build_html_report(
         if rule_signals
         else ""
     )
-    progress_color = "#10b981" if probability <= 0.30 else "#f59e0b" if probability <= 0.70 else "#ef4444"
+    progress_color = "#10b981" if probability < LOW_RISK_THRESHOLD else "#f59e0b" if probability < HIGH_RISK_THRESHOLD else "#ef4444"
     incident_date = claim.get("incident_date", "Unknown")
     policy_number = claim.get("policy_number", "Demo claim")
     return f"""
@@ -134,6 +136,13 @@ def build_html_report(
     table {{ width: 100%; border-collapse: collapse; margin-top: 16px; }}
     td, th {{ border-bottom: 1px solid #223454; padding: 10px; text-align: left; }}
     th {{ color: #38bdf8; }}
+    @media (max-width: 600px) {{
+      body {{ padding: 16px; }}
+      .card {{ padding: 16px; max-width: 100%; }}
+      .grid {{ grid-template-columns: 1fr; }}
+      .bar-row {{ grid-template-columns: 1fr; gap: 4px; }}
+      .bar-value {{ text-align: left; }}
+    }}
   </style>
 </head>
 <body>
@@ -204,7 +213,8 @@ def build_pdf_report(
         y -= 0.035
         ax.text(0.08, y, f"Risk Level: {risk}", fontsize=12, color="#334155")
         y -= 0.04
-        ax.barh([y], [probability], left=[0.08], height=0.015, color="#ef4444" if probability > 0.70 else "#f59e0b" if probability > 0.30 else "#10b981")
+        pdf_bar_color = "#10b981" if probability < LOW_RISK_THRESHOLD else "#f59e0b" if probability < HIGH_RISK_THRESHOLD else "#ef4444"
+        ax.barh([y], [probability], left=[0.08], height=0.015, color=pdf_bar_color)
         ax.barh([y], [1 - probability], left=[0.08 + probability], height=0.015, color="#e2e8f0")
         ax.set_xlim(0, 1)
         y -= 0.06
