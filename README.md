@@ -5,7 +5,7 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6-F7931E?style=flat-square&logo=scikit-learn)](https://scikit-learn.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-🔗 **[Live Demo → fraudguard-ai.streamlit.app](https://fraudguard-ai.streamlit.app)**
+🔗 **[Live Demo → fraudguard-ai.streamlit.app](https://fraudguard-ai-ljpybjziicpkymlpuzbsus.streamlit.app/)**
 
 FraudGuard AI is a Machine Learning-powered insurance claim fraud detection system designed to identify suspicious automobile insurance claims and support fraud investigation workflows.
 
