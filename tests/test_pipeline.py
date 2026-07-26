@@ -96,3 +96,30 @@ def test_no_nulls_after_preprocessing(sample_claim):
     
     # Assert that no missing values exist in preprocessed data
     assert not np.isnan(X_trans).any()
+
+
+def test_question_mark_standardized_to_unknown(sample_claim):
+    claim_with_question_mark = sample_claim.copy()
+    claim_with_question_mark["collision_type"] = "?"
+    claim_with_question_mark["police_report_available"] = "?"
+    
+    df = pd.DataFrame([claim_with_question_mark])
+    df_engineered = engineer_features(df)
+    
+    assert df_engineered.loc[0, "collision_type"] == "Unknown"
+    assert df_engineered.loc[0, "police_report_available"] == "Unknown"
+
+
+def test_batch_prediction_applies_business_rules(sample_claim):
+    suspicious_claim = sample_claim.copy()
+    suspicious_claim["total_claim_amount"] = 55000
+    suspicious_claim["months_as_customer"] = 6
+    
+    df = pd.DataFrame([sample_claim, suspicious_claim])
+    results = predict_claims(df)
+    
+    assert "base_fraud_probability" in results.columns
+    assert "fraud_probability" in results.columns
+    assert len(results) == 2
+    # Suspicious claim should receive an upward business rule adjustment
+    assert results.loc[1, "fraud_probability"] > results.loc[1, "base_fraud_probability"]

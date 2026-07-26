@@ -262,7 +262,7 @@ def show_prediction(frame: pd.DataFrame) -> None:
     model = load_model()
     prepared = model_input_frame(frame)
     result = predict_claims(prepared, model=model).iloc[0]
-    base_probability = float(result["fraud_probability"])
+    base_probability = float(result["base_fraud_probability"])
     report_claim = frame.iloc[0]
     probability, rule_signals = business_rule_adjustment(report_claim, base_probability)
     prediction = "Fraud" if probability >= 0.5 else "Legitimate"

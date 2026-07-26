@@ -74,7 +74,7 @@ def business_rule_adjustment(claim: pd.Series, base_probability: float) -> tuple
         adjusted_probability += 0.18
         signals.append("Unusually high injury claim relative to minor damage severity.")
 
-    if police_report in {"NO", "?"} and witnesses == 0 and injury_claim >= 10000:
+    if police_report in {"NO", "?", "UNKNOWN"} and witnesses == 0 and injury_claim >= 10000:
         adjusted_probability += 0.12
         signals.append("High injury claim has limited supporting police or witness documentation.")
 

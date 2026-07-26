@@ -388,7 +388,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = "==1.6.1" },
     { name = "scipy", specifier = "==1.16.2" },
     { name = "seaborn", specifier = "==0.13.2" },
-    { name = "shap", specifier = ">=0.52.0" },
+    { name = "shap", specifier = ">=0.45.1" },
     { name = "streamlit", specifier = "==1.57.0" },
     { name = "xgboost", specifier = "==3.1.0" },
 ]

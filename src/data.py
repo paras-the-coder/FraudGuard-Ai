@@ -25,6 +25,11 @@ def load_prepared_data() -> pd.DataFrame:
 def engineer_features(data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy()
 
+    # Convert '?' missing placeholders to 'Unknown' in string/object columns to match training pipeline
+    for col in df.columns:
+        if col != TARGET_COLUMN and (df[col].dtype == "object" or df[col].dtype == "string"):
+            df[col] = df[col].astype(str).str.strip().replace("?", "Unknown")
+
     if TARGET_COLUMN in df.columns:
         if df[TARGET_COLUMN].dtype == "object":
             df[TARGET_COLUMN] = df[TARGET_COLUMN].astype(str).str.strip().map({"Y": 1, "N": 0})
