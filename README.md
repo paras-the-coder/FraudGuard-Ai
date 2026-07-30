@@ -146,8 +146,7 @@ The final model is not intended to automatically reject claims. Instead, it acts
 
 ### Model Performance Visuals
 
-<img width="1408" height="555" alt="image" src="https://github.com/user-attachments/assets/4b88c3f6-33ab-41bf-bb0c-31cb31a0a48e" />
-
+<img width="1782" height="884" alt="model_comparison" src="https://github.com/user-attachments/assets/e2466747-82d3-4cd2-939b-0123c4bf7380" />
 
 ---
 
