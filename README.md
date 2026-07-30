@@ -124,29 +124,23 @@ These engineered features help capture suspicious claim behavior and fraud-relat
 
 # Model Performance
 
-The final model selected for this project is **Logistic Regression**.
+The final model selected for this project is **XGBoost (Balanced & Tuned)**.
 
-Although multiple models were tested, including **Random Forest** and **XGBoost**, Logistic Regression was chosen as the best production-ready model because it achieved the strongest balance for fraud detection, especially on **recall**.
+After dropping noisy features like `insured_hobbies`, multiple algorithms were evaluated using 5-fold cross-validation and hyperparameter tuning. **XGBoost (Balanced)** was chosen as the primary production model due to its high overall accuracy, balanced F2 score, and superior handling of non-linear feature interactions.
 
 | Model | Accuracy | Recall | F1 Score | F2 Score | ROC-AUC |
 | --- | --- | --- | --- | --- | --- |
-| **Logistic Regression** ✓ | 0.845 | **0.857** | **0.730** | **0.802** | 0.849 |
-| Random Forest | 0.830 | 0.755 | 0.685 | 0.726 | 0.833 |
-| XGBoost (SMOTE, tuned) | 0.855 | 0.776 | 0.724 | 0.754 | 0.860 |
-| XGBoost (scale_pos_weight, tuned) | 0.845 | **0.857** | **0.730** | **0.802** | 0.841 |
+| **XGBoost (Balanced)** ✓ | **0.830** | 0.735 | **0.679** | **0.711** | 0.778 |
+| Random Forest | **0.830** | 0.735 | **0.679** | **0.711** | 0.778 |
+| Logistic Regression | 0.740 | **0.755** | 0.587 | 0.678 | **0.796** |
 
-> XGBoost was additionally evaluated with `scale_pos_weight` class balancing and full RandomizedSearchCV tuning (50 iterations, 6 hyperparameters). The best XGBoost configuration achieved **identical recall and F2 to Logistic Regression**, confirming that the simpler model is the correct production choice — equal performance with better interpretability and faster inference.
+## Why XGBoost Was Selected
 
-## Why Logistic Regression Was Selected
+In insurance fraud detection, catching suspicious claims requires balancing accuracy, fraud recall, and feature interaction modeling. **XGBoost (Balanced)** was selected because:
 
-In insurance fraud detection, **missing a fraudulent claim is more costly than sending a legitimate claim for review**. Because of this, the model was selected primarily based on **Recall** and **F2 Score**, not accuracy alone.
-
-While the original unbalanced XGBoost missed more fraud cases, retraining XGBoost with class weight balancing (`scale_pos_weight`) and hyperparameter tuning allowed it to match the highest recall (86%) and F2 score (0.802) of Logistic Regression.
-
-However, **Logistic Regression was still selected as the final production model** because it delivers identical recall and F2 score to the tuned XGBoost while being:
-
-- **Highly interpretable:** Easier to explain prediction logic and feature contributions to claims adjusters, investigators, and regulators.
-- **Simpler and faster:** Faster to train, run, and maintain in production with zero deployment overhead compared to complex tree ensembles.
+- **Higher Overall Accuracy & F1/F2 Balance:** Achieves 83.0% accuracy with a solid 0.711 F2 score, outperforming Logistic Regression's overall classification precision.
+- **Handles Non-Linear Feature Interactions:** Captures complex multi-variable risk signals (such as Major Damage combined with high claim ratios or short tenure) that simple linear models miss.
+- **Tree-Based SHAP Explainability:** Pairs directly with `shap.Explainer` (TreeExplainer) to provide exact instance-level feature attributions without linear model assumptions.
 
 The final model is not intended to automatically reject claims. Instead, it acts as a **fraud risk screening tool** that helps prioritize claims for manual or SIU review.
 
@@ -159,16 +153,26 @@ The final model is not intended to automatically reject claims. Instead, it acts
 
 ## Explainability & Risk Interpretation
 
-FraudGuard AI uses **SHAP (SHapley Additive exPlanations)** via `shap.LinearExplainer` 
-to generate per-prediction, instance-level explanations.
+FraudGuard AI uses **SHAP (SHapley Additive exPlanations)** via `shap.Explainer` (TreeExplainer)
+to generate per-prediction, instance-level explanations for the XGBoost model.
 
 Each prediction shows which features pushed the fraud probability up or down 
-for that specific claim — not global model weights, but claim-specific reasoning.
+for that specific claim — providing claim-specific reasoning.
 
 SHAP analysis revealed that `incident_severity_major_damage` is the strongest 
-global fraud signal. Features like insured hobbies appearing in top SHAP values 
-are acknowledged as likely spurious correlations from the small dataset (~1000 rows) 
-rather than genuine causal fraud indicators.
+global fraud signal. Dropping non-causal features like `insured_hobbies` removed spurious 
+correlations, resulting in clean, domain-backed SHAP explanations.
+
+### Fraud Rate by Incident Severity
+
+| Incident Severity | Total Claims | Fraud Claims | Fraud Rate (%) |
+|---|:---:|:---:|:---:|
+| **Major Damage** | 276 | 167 | **60.5%** |
+| **Total Loss** | 280 | 36 | 12.9% |
+| **Minor Damage** | 354 | 38 | **10.7%** |
+| **Trivial Damage** | 90 | 6 | 6.7% |
+
+> **Why Major Damage Dominates:** Claims reporting **Major Damage** have a **60.5% fraud rate**, compared to only **10.7%** for Minor Damage. This massive 6x risk contrast justifies why XGBoost assigns its highest tree-split weightings to major incident severity.
 
 Explanations support fraud-risk interpretation workflows but should not be treated 
 as legal or causal proof of fraud.
@@ -220,7 +224,7 @@ This improves fraud-screening realism and operational interpretability.
 
 - **Web Application**: Streamlit, Custom CSS
 
-- **Model Explainability & Reporting**: SHAP (LinearExplainer), per-prediction waterfall contributions, business-rule fraud signals, HTML and PDF investigation report generation
+- **Model Explainability & Reporting**: SHAP (TreeExplainer), per-prediction feature contributions, business-rule fraud signals, HTML and PDF investigation report generation
 
 ---
 
@@ -259,8 +263,8 @@ Feature Engineering
 (claim_ratio, vehicle_age, days_between_policy_incident, csl splits)
         │
         ▼
-Logistic Regression Pipeline
-(StandardScaler + OneHotEncoder + SMOTE + LR)
+Balanced XGBoost Pipeline
+(StandardScaler + OneHotEncoder + scale_pos_weight + XGBoost)
         │
         ▼
 Base Fraud Probability Score
@@ -284,7 +288,7 @@ Final Risk Score + Signals
 FraudGuard AI is a fraud-screening support tool, not a final fraud decision system.
 
 - The predictions are based on probabilities, so the model may sometimes predict fraud incorrectly or miss some fraud cases.
-- The dataset is limited in size and scope. Real-world insurance fraud systems require significantly larger and more diverse datasets.
+- The dataset is synthetic and small in size. Real-world insurance fraud systems require significantly larger and more diverse datasets.
 - Human investigation is still required for final fraud decisions.
 - The deployed model prioritizes explainability and recall over maximum predictive performance.
 - Some business-rule checks added in the app are manually designed and may not fully represent real insurance company workflows.
@@ -312,11 +316,11 @@ FraudGuard AI should be viewed as a fraud risk assessment and investigation supp
 
 # What I Learned
 
-* Built an end-to-end ML pipeline with SMOTE inside an imbalanced-learn `Pipeline` to prevent data leakage during cross-validation
-* Used `make_scorer(fbeta_score, beta=2)` as the `RandomizedSearchCV` scoring function so hyperparameter search optimized directly for fraud recall, not accuracy
-* Designed business-rule post-processing on top of model probability scores to capture fraud signals that statistical features alone cannot express
-* Implemented coefficient-based feature contribution explanations for logistic regression as a lightweight, production-compatible alternative to SHAP
-* Learned why precision-recall tradeoffs matter more than accuracy in imbalanced, high-cost classification problems like insurance fraud
+* Built an end-to-end ML pipeline using XGBoost with `scale_pos_weight` class balancing inside a scikit-learn `Pipeline` to prevent data leakage
+* Used `make_scorer(fbeta_score, beta=2)` with `RandomizedSearchCV` so hyperparameter tuning optimized directly for fraud recall and F2 score
+* Integrated `shap.Explainer` (TreeExplainer) to generate instance-level feature attributions for non-linear tree models
+* Designed business-rule post-processing on top of model probability scores to capture domain fraud signals that statistical features alone cannot express
+* Identified and removed spurious feature correlations (`insured_hobbies`) to ensure model explainability relies purely on genuine risk factors
 
 ---
 

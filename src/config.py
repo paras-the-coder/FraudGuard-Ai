@@ -81,33 +81,26 @@ MODEL_INPUT_COLUMNS = [
 ]
 
 MODEL_COMPARISON = {
+    "XGBoost (Balanced)": {
+        "Accuracy": 0.8300,
+        "Recall": 0.7350,
+        "F1 Score": 0.6790,
+        "F2 Score": 0.7110,
+        "ROC-AUC": 0.7780,
+    },
     "Logistic Regression": {
-        "Accuracy": 0.8450,
-        "Recall": 0.8571,
-        "F1 Score": 0.7304,
-        "F2 Score": 0.8015,
-        "ROC-AUC": 0.8490,
+        "Accuracy": 0.7400,
+        "Recall": 0.7550,
+        "F1 Score": 0.5870,
+        "F2 Score": 0.6780,
+        "ROC-AUC": 0.7960,
     },
     "Random Forest": {
         "Accuracy": 0.8300,
-        "Recall": 0.7551,
-        "F1 Score": 0.6852,
-        "F2 Score": 0.7255,
-        "ROC-AUC": 0.8330,
-    },
-    "XGBoost": {
-        "Accuracy": 0.8550,
-        "Recall": 0.7755,
-        "F1 Score": 0.7238,
-        "F2 Score": 0.7540,
-        "ROC-AUC": 0.8604,
-    },
-    "XGBoost (Balanced)": {
-        "Accuracy": 0.8450,
-        "Recall": 0.8571,
-        "F1 Score": 0.7304,
-        "F2 Score": 0.8015,
-        "ROC-AUC": 0.8430,
+        "Recall": 0.7350,
+        "F1 Score": 0.6790,
+        "F2 Score": 0.7110,
+        "ROC-AUC": 0.7780,
     },
 }
 

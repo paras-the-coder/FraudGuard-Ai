@@ -87,7 +87,7 @@ def get_shap_explainer(_model):
     Loads and processes the background dataset to calibrate Shapley values.
     """
     preprocess_step = _model.named_steps["preprocess"]
-    lr_model = _model.named_steps["model"]
+    model_step = _model.named_steps["model"]
     
     # Load background data
     from src.data import load_prepared_data
@@ -105,8 +105,8 @@ def get_shap_explainer(_model):
         for name in preprocess_step.get_feature_names_out()
     ]
     
-    # Use LinearExplainer
-    explainer = shap.LinearExplainer(lr_model, bg_trans, feature_names=feature_names)
+    # Use shap.Explainer (supports tree-based XGBoost models and linear models)
+    explainer = shap.Explainer(model_step, bg_trans)
     return explainer, preprocess_step
 
 
