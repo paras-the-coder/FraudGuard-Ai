@@ -15,8 +15,15 @@ def top_feature_contributions(model, row: pd.DataFrame, limit: int = 6) -> pd.Da
 
     transformed = preprocess.transform(row)
     feature_names = preprocess.get_feature_names_out()
-    coefficients = estimator.coef_[0]
-    contributions = transformed[0] * coefficients
+
+    if hasattr(estimator, "coef_"):
+        coefficients = estimator.coef_[0]
+        contributions = transformed[0] * coefficients
+    elif hasattr(estimator, "feature_importances_"):
+        importances = estimator.feature_importances_
+        contributions = transformed[0] * importances
+    else:
+        contributions = transformed[0]
 
     output = pd.DataFrame(
         {
