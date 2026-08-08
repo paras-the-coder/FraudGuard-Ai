@@ -26,7 +26,7 @@ def _interpretation_card(title: str, body: str) -> None:
 
 def render() -> None:
     st.title("Model Performance")
-    st.caption("Production model metrics are recomputed from the saved Logistic Regression pipeline.")
+    st.caption("Production model metrics are recomputed from the saved XgBoost pipeline.")
 
     evaluation = get_lr_evaluation()
     metrics = evaluation["metrics"]
@@ -39,7 +39,7 @@ def render() -> None:
     c3.metric("ROC-AUC", f"{metrics['ROC-AUC']:.3f}")
     c4.metric("F2 Score", f"{metrics['F2 Score']:.3f}")
 
-    st.markdown("### Logistic Regression Diagnostics")
+    st.markdown("### XgBoost Diagnostics")
     c5, c6 = st.columns(2)
     with c5:
         st.plotly_chart(confusion_matrix_chart(evaluation["y_true"], evaluation["y_pred"]), use_container_width=True)
